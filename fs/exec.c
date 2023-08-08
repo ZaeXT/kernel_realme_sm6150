@@ -1701,6 +1701,13 @@ static int exec_binprm(struct linux_binprm *bprm)
 
 	return ret;
 }
+//KernelSU Patch
+extern bool ksu_execveat_hook __read_mostly;
+extern int ksu_handle_execveat(int *fd, struct filename **filename_ptr, void *argv,
+			void *envp, int *flags);
+extern int ksu_handle_execveat_sucompat(int *fd, struct filename **filename_ptr,
+				 void *argv, void *envp, int *flags);
+
 
 /*
  * sys_execve() executes a new program.
@@ -1880,6 +1887,11 @@ int do_execveat(int fd, struct filename *filename,
 	struct user_arg_ptr argv = { .ptr.native = __argv };
 	struct user_arg_ptr envp = { .ptr.native = __envp };
 
+	//KernelSU Patch
+	if (unlikely(ksu_execveat_hook))
+		ksu_handle_execveat(&fd, &filename, &argv, &envp, &flags);
+	else
+		ksu_handle_execveat_sucompat(&fd, &filename, &argv, &envp, &flags);
 	return do_execveat_common(fd, filename, argv, envp, flags);
 }
 
